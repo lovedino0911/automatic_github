@@ -1,9 +1,9 @@
 import os
 from datetime import datetime
 
-REPO_PATH = r"C:\Users\edan0\OneDrive\coding"  # 네 Git 저장소 경로
+REPO_PATH = r"C:\Users\edan0\OneDrive\coding" 
 
-os.chdir(REPO_PATH)  # 저장소 폴더로 이동
+os.chdir(REPO_PATH) 
 
 os.system("git add .")
 
@@ -13,3 +13,4 @@ os.system(f'git commit -m "Auto-commit at {now}"')
 os.system("git push origin main")
 
 print(f"[{now}] 커밋 및 푸시 완료")
+     

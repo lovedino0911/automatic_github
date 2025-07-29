@@ -1,1 +1,0 @@
-# school_timetable_neis

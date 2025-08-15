@@ -1,14 +1,14 @@
 import requests
 from datetime import datetime
 
-today=datetime.today().strftime("%Y%m%d")
+today=20250305
 grade=input("학년 입력:")
 class_nm=input("반 입력:")
 
 api_key="a2a331d46daa4a43bad3c6d5394d536b"
 link="https://open.neis.go.kr/hub/hisTimetable"
-edu_code="D10"         
-school_code="B000024656"  
+edu_code="J10"         
+school_code="7531290"  
 
 #파라미터
 parameter={

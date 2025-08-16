@@ -50,7 +50,8 @@ def go_up():
     if head.direction != "down": 
         head.direction = "up" 
 def go_down(): 
-    if head.direction != "up": head.direction = "down" 
+    if head.direction != "up": 
+        head.direction = "down" 
 def go_left(): 
     if head.direction != "right": 
         head.direction = "left" 
@@ -60,15 +61,7 @@ def go_right():
         
 def move(): 
     step = 20 
-    if head.direction == "up": 
-        head.sety(head.ycor() + step) 
-    elif head.direction == "down": 
-        head.sety(head.ycor() - step) 
-    elif head.direction == "left": 
-        head.setx(head.xcor() - step) 
-    elif head.direction == "right":
-         head.setx(head.xcor() + step) 
-         
+
     for i in range(len(segments)-1, 0, -1): 
         x = segments[i-1].xcor() 
         y = segments[i-1].ycor() 
@@ -76,6 +69,16 @@ def move():
         
     if len(segments) > 0: 
         segments[0].goto(head.xcor(), head.ycor()) 
+
+    if head.direction == "up": 
+        head.sety(head.ycor() + step) 
+    if head.direction == "down": 
+        head.sety(head.ycor() - step) 
+    if head.direction == "left": 
+        head.setx(head.xcor() - step) 
+    if head.direction == "right":
+         head.setx(head.xcor() + step) 
+         
 
 def game_reset():
     global score, high_score, delay
@@ -119,7 +122,7 @@ def game_loop():
         score += 10 
         if score > high_score: 
             high_score = score 
-        delay = max(0.02, delay - 0.002) 
+        delay -= 0.002 
         pen.clear() 
         pen.write(f"score : {score} , high score : {high_score}", align = "center", font = ("Courier", 24, "normal")) 
 

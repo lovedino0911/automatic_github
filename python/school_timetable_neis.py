@@ -1,7 +1,7 @@
 import requests
 from datetime import datetime
 
-today=20250305
+today=datetime.today().strftime("%Y%m%d")
 grade=input("학년 입력:")
 class_nm=input("반 입력:")
 

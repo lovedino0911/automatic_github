@@ -122,7 +122,7 @@ def game_loop():
         score += 10 
         if score > high_score: 
             high_score = score 
-        delay -= 0.002 
+        delay -= 0.001  
         pen.clear() 
         pen.write(f"score : {score} , high score : {high_score}", align = "center", font = ("Courier", 24, "normal")) 
 

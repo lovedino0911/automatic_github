@@ -62,6 +62,19 @@ def draw_particles() :
             particles.remove(p)
 
 def gravity() :
+
+    water_spread = 5
+    # adjustable_params 안 "water_spread value" 가져오기
+    for param in adjustable_params:
+        if param["key"] == "water_spread":
+            water_spread = int(param["value"])
+            break
+    gravity_strength = 1
+    for param in adjustable_params:
+        if param["key"] == "gravity_strength":
+            gravity_strength = param["value"]
+            break
+
     for y in range(height - 2, -1, -1) :
         for x in range(width) :
             # sand
@@ -83,9 +96,10 @@ def gravity() :
                     grid[y+1][x] = water
                     grid[y][x] = empty
                 else:
-                    # left and right ~ 5, 바닥 위에서만
-                    offsets = list(range(1, 6))
+                    # 물 범위
+                    offsets = list(range(1, water_spread + 1))
                     random.shuffle(offsets)
+
                     dirs = [-1, 1]
                     random.shuffle(dirs)
                     moved = False
@@ -191,12 +205,65 @@ def draw_particle_buttons() :
         text_rect = text.get_rect(center = b["rect"].center)
         screen.blit(text, text_rect)
 
+def draw_adjustable_params_button() :
+    for param in adjustable_params:
+        # current value
+        label_text = f"{param['label']}: {param['value']:.1f}"
+        text_surface = adjustable_params_button_font.render(label_text, True, (255, 255, 255))
+        screen.blit(text_surface, param["text_rect"].topleft)
+        # up object
+        up_color = (0, 200, 0) 
+        pygame.draw.rect(screen, up_color, param["up_rect"])
+        up_text = adjustable_params_button_font.render("▲", True, (255, 255, 255))
+        text_rect = up_text.get_rect(center=param["up_rect"].center)
+        screen.blit(up_text, text_rect)
+        # down object
+        down_color = (200, 0, 0) 
+        pygame.draw.rect(screen, down_color, param["down_rect"])
+        down_text = adjustable_params_button_font.render("▼", True, (255, 255, 255))
+        text_rect = down_text.get_rect(center=param["down_rect"].center)
+        screen.blit(down_text, text_rect)
+
 
 current_pixel = sand
 info_button_rect = pygame.Rect(screen_width - 120, 20, 100, 40)
 show_info = False
 font = pygame.font.SysFont("malgungothic", 20)
 
+adjustable_params = [
+    { 
+        "label" : "Water Spread",
+        "value" : 5,
+        "m" : 1,
+        "M" : 10,
+        "level" : 1,
+        "key" : "water_spread"
+    },
+    {
+        "label" : "Gravity Strength",
+        "value" : 1,
+        "m" : 0.5,
+        "M" : 3,
+        "level" : 1,
+        "key" : "gravity_strength"
+    }
+]
+
+button_width = 15
+button_height = 15
+row_height = 30
+start_x = screen_width - 250
+start_y = screen_height - 100
+
+# button object
+
+for i, param in enumerate(adjustable_params) :
+    y_pos = start_y + i * row_height
+    param["text_rect"] = pygame.Rect(start_x, y_pos, 200, button_height)
+    param["up_rect"] = pygame.Rect(start_x + 200, y_pos, button_width, button_height)
+    param["down_rect"] = pygame.Rect(start_x + 200 + button_height + 5, y_pos, button_width, button_height)
+
+adjustable_params_button_font = font
 
 # main loop
 running = True
@@ -214,10 +281,32 @@ while running :
                 show_info = not show_info
                 click_blocked = True
             else:
+
+                # up, down button
+                adj_button_clicked = False
+                for param in adjustable_params:
+                    mouse_pos = event.pos
+
+                    # up click
+                    if param["up_rect"].collidepoint(mouse_pos):
+                        new_val = param["value"] + param["level"]
+                        param["value"] = round(min(new_val, param["M"]), 1)
+                        adj_button_clicked = True
+                        click_blocked = True
+                        break
+                    # down click
+                    if param["down_rect"].collidepoint(mouse_pos):
+                        new_val = param["value"] - param["level"]
+                        param["value"] = round(max(new_val, param["m"]), 1)
+                        adj_button_clicked = True
+                        click_blocked = True
+                        break
+            if not adj_button_clicked:
                 for b in particle_buttons:
                     if b["rect"].collidepoint(event.pos):
                         current_pixel = b["type"]
                         click_blocked = True
+
         elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
             click_blocked = False
 
@@ -237,7 +326,17 @@ while running :
                     if 0 <= nx < width and 0 <= ny < height and grid[ny][nx] == empty :
                         grid[ny][nx] = current_pixel
 
-    gravity()
+    current_gravity = 1
+    for param in adjustable_params:
+        if param["key"] == "gravity_strength":
+            current_gravity = param["value"]
+            break
+    for _ in range(int(current_gravity)) :
+        gravity()
+    decimal_part = current_gravity - int(current_gravity)
+    if random.random() < decimal_part :
+        gravity()
+
     draw_grid()
     draw_particles()
     draw_fire()
@@ -245,5 +344,6 @@ while running :
     if show_info :
         draw_info()
     draw_particle_buttons()
+    draw_adjustable_params_button()
 
     pygame.display.flip()   

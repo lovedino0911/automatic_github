@@ -28,7 +28,13 @@ colors = {
 
 grid = [[empty for _ in range(width)] for _ in range(height)]
 particles = []
+particle_buttons = [
+    {"type" : sand, "rect" : pygame.Rect(20, screen_height - 70, 70, 50)},
+    {"type" : water, "rect" : pygame.Rect(110, screen_height - 70, 70, 50)},
+    {"type" : fire, "rect" : pygame.Rect(200, screen_height - 70, 70, 50)}
+]
 
+button_font = pygame.font.SysFont("malgungothic", 28)
 
 # functions
 
@@ -106,7 +112,8 @@ def gravity() :
     if (
         current_pixel == fire 
         and pygame.mouse.get_focused() 
-        and pygame.mouse.get_pressed()[0] 
+        and pygame.mouse.get_pressed()[0]
+        and not click_blocked
     ) :
         mx, my = pygame.mouse.get_pos()
         gx = mx // pixel_size
@@ -157,27 +164,69 @@ def draw_fire() :
                         fire_surface.fill(base_color, rect)
         screen.blit(fire_surface, (0, 0))
 
+def draw_info_button() :
+    pygame.draw.rect(screen, (200, 200, 200), info_button_rect)
+    pygame.draw.rect(screen, (100, 100, 100), info_button_rect, 2)
+    text = font.render("INFO", True, (0, 0, 0))
+    text_rect = text.get_rect(center = info_button_rect.center)
+    screen.blit(text, text_rect)
+
+def draw_info() :
+    info_lines = [
+        f"Current pixel : {'SAND' if current_pixel == sand else 'WATER' if current_pixel == water else 'FIRE'}",
+        "Left click : create pixel",
+        "FIRE : click to burn!"
+    ]
+    for i, line in enumerate(info_lines) :
+        text = font.render(line, True, (255, 255, 255))
+        screen.blit(text, (20, 20 + i * 28))
+
+def draw_particle_buttons() :
+    for b in particle_buttons :
+        color = colors[b["type"]]
+        pygame.draw.rect(screen, color, b["rect"])
+        pygame.draw.rect(screen, (255, 255, 255) if current_pixel == b["type"] else (100, 100, 100), b["rect"], 3)
+        label = {sand : "SAND", water : "WATER", fire : "FIRE"}[b["type"]]
+        text = font.render(label, True, (0, 0, 0))
+        text_rect = text.get_rect(center = b["rect"].center)
+        screen.blit(text, text_rect)
+
 
 current_pixel = sand
+info_button_rect = pygame.Rect(screen_width - 120, 20, 100, 40)
+show_info = False
+font = pygame.font.SysFont("malgungothic", 20)
 
 
 # main loop
 running = True
+click_blocked = False
+
 while running :
     clock.tick(120)
-    for event in pygame.event.get() :
-        if event.type == pygame.QUIT :
+    skip_drawing_this_frame = False
+    #event
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
             running = False
-        elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_1:
-                current_pixel = sand
-            elif event.key == pygame.K_2:
-                current_pixel = water
-            elif event.key == pygame.K_3:
-                current_pixel = fire
-                # add...
+        elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            if info_button_rect.collidepoint(event.pos):
+                show_info = not show_info
+                click_blocked = True
+            else:
+                for b in particle_buttons:
+                    if b["rect"].collidepoint(event.pos):
+                        current_pixel = b["type"]
+                        click_blocked = True
+        elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+            click_blocked = False
 
-    if pygame.mouse.get_pressed()[0] and current_pixel != fire :
+
+    if (
+        pygame.mouse.get_pressed()[0] 
+        and not click_blocked
+        and current_pixel != fire
+     ) :
         mx, my = pygame.mouse.get_pos()
         gx = mx // pixel_size
         gy = my // pixel_size
@@ -192,5 +241,9 @@ while running :
     draw_grid()
     draw_particles()
     draw_fire()
+    draw_info_button()
+    if show_info :
+        draw_info()
+    draw_particle_buttons()
 
-    pygame.display.flip()
+    pygame.display.flip()   

@@ -27,6 +27,7 @@ colors = {
     }
 
 grid = [[empty for _ in range(width)] for _ in range(height)]
+particles = []
 
 
 # functions
@@ -35,7 +36,24 @@ def draw_grid():
     for y in range(height):
         for x in range(width):
             rect = pygame.Rect(x*pixel_size, y*pixel_size, pixel_size, pixel_size)
-            pygame.draw.rect(screen, colors[grid[y][x]], rect) 
+            pygame.draw.rect(screen, colors[grid[y][x]], rect)
+
+def draw_particles() :
+    for p in particles[ : ] :
+        px = int(p["x"] * pixel_size)
+        py = int(p["y"] * pixel_size)
+        surf = pygame.Surface((pixel_size, pixel_size), pygame.SRCALPHA)
+        surf.fill(p["color"])
+        screen.blit(surf, (px, py))
+        # move particles
+        p["x"] += p["vx"]
+        p["y"] += p["vy"]
+        p["life"] -= 1
+        if p["life"] < 8:
+            alpha = max(0, int(p["color"][3] * p["life"] / 8))
+            p["color"] = (p["color"][0], p["color"][1], p["color"][2], alpha)
+        if p["life"] <= 0 or p["y"] < 0:
+            particles.remove(p)
 
 def gravity() :
     for y in range(height - 2, -1, -1) :
@@ -53,44 +71,43 @@ def gravity() :
                             grid[y][x] = empty
                             break 
             # water
-            elif grid[y][x] == water:
-                moved = False
+            elif grid[y][x] == water :
                 # down
                 if grid[y+1][x] == empty:
                     grid[y+1][x] = water
                     grid[y][x] = empty
-                    moved = True
                 else:
                     # left and right ~ 5, 바닥 위에서만
                     offsets = list(range(1, 6))
-                    dirs = [-1, 1]
-                    random.shuffle(dirs)  
                     random.shuffle(offsets)
+                    dirs = [-1, 1]
+                    random.shuffle(dirs)
+                    moved = False
                     for offset in offsets:
                         for dx in dirs:
                             nx = x + dx * offset
-                            if (0 <= nx < width and
-                                grid[y][nx] == empty and
-                                grid[y+1][nx] != empty):
-                                grid[y][nx] = water
-                                grid[y][x] = empty
-                                moved = True
-                                break
+                            if 0 <= nx < width:
+                                if grid[y][nx] == empty and grid[y+1][nx] == empty:
+                                    grid[y+1][nx] = water
+                                    grid[y][x] = empty
+                                    moved = True
+                                    break
+                                elif grid[y][nx] == empty and grid[y+1][nx] != empty:
+                                    grid[y][nx] = water
+                                    grid[y][x] = empty
+                                    moved = True
+                                    break
                         if moved:
                             break
 
-                if not moved :
-                    dirs = [-1, 1]
-                    random.shuffle(dirs)  
-                    for dx in dirs:
-                        nx = x + dx
-                        if 0 <= nx < width and grid[y][nx] == empty:
-                            grid[y][nx] = water
-                            grid[y][x] = empty
-                            break 
+              
     
     # fire, water interection
-    if current_pixel == fire and pygame.mouse.get_focused() :
+    if (
+        current_pixel == fire 
+        and pygame.mouse.get_focused() 
+        and pygame.mouse.get_pressed()[0] 
+    ) :
         mx, my = pygame.mouse.get_pos()
         gx = mx // pixel_size
         gy = my // pixel_size
@@ -100,8 +117,18 @@ def gravity() :
                 nx, ny = gx + dx, gy + dy
                 if 0 <= nx < width and 0 <= ny < height :
                     dist = (dx**2 + dy**2)**0.5
-                    if dist <= fire_r and grid[ny][nx] == water :
-                        grid[ny][nx] = empty # 증발
+                    if dist <= fire_r and grid[ny][nx] in (water, sand) :
+                        grid[ny][nx] = empty # burn
+                        # effect
+                        if random.random() < 0.3 :
+                            particles.append({
+                                "x" : nx,
+                                "y" : ny,
+                                "color" : (180, 180, 180, 120),
+                                "life": random.randint(10, 20),
+                                "vx": random.uniform(-0.5, 0.5),
+                                "vy": random.uniform(-1.5, -0.5)
+                            })
                             
 def draw_fire() :
     if current_pixel == fire and pygame.mouse.get_focused() :
@@ -163,6 +190,7 @@ while running :
 
     gravity()
     draw_grid()
+    draw_particles()
     draw_fire()
 
     pygame.display.flip()

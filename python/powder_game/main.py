@@ -18,12 +18,14 @@ empty = 0
 sand = 1
 water = 2
 fire = 3
+plant = 4
 
 colors = {
     empty: (0, 0, 0), 
     sand: (194, 178, 128), 
     water: (64, 164, 223), 
-    fire: (255, 100, 0)
+    fire: (255, 100, 0),
+    plant: (0, 150, 0)
     }
 
 grid = [[empty for _ in range(width)] for _ in range(height)]
@@ -31,7 +33,8 @@ particles = []
 particle_buttons = [
     {"type" : sand, "rect" : pygame.Rect(20, screen_height - 70, 70, 50)},
     {"type" : water, "rect" : pygame.Rect(110, screen_height - 70, 70, 50)},
-    {"type" : fire, "rect" : pygame.Rect(200, screen_height - 70, 70, 50)}
+    {"type" : fire, "rect" : pygame.Rect(200, screen_height - 70, 70, 50)},
+    {"type" : plant, "rect" : pygame.Rect(290, screen_height - 70, 70, 50)}
 ]
 
 button_font = pygame.font.SysFont("malgungothic", 28)
@@ -122,7 +125,7 @@ def gravity() :
 
               
     
-    # fire, water interection
+    # fire, water, plant interection
     if (
         current_pixel == fire 
         and pygame.mouse.get_focused() 
@@ -138,7 +141,7 @@ def gravity() :
                 nx, ny = gx + dx, gy + dy
                 if 0 <= nx < width and 0 <= ny < height :
                     dist = (dx**2 + dy**2)**0.5
-                    if dist <= fire_r and grid[ny][nx] in (water, sand) :
+                    if dist <= fire_r and grid[ny][nx] in (water, sand, plant) :
                         grid[ny][nx] = empty # burn
                         # effect
                         if random.random() < 0.3 :
@@ -178,6 +181,44 @@ def draw_fire() :
                         fire_surface.fill(base_color, rect)
         screen.blit(fire_surface, (0, 0))
 
+def grow_plant() :
+    for y in range(height) :
+        for x in range(width) :
+            if grid[y][x] == plant :
+
+                growth_chance = 0
+                has_water_nearby = False
+
+                for dx_env in [-1, 0, 1]:
+                    for dy_env in [-1, 0, 1]:
+                        if dx_env == 0 and dy_env == 0:
+                            continue
+                        nx_env, ny_env = x + dx_env, y + dy_env 
+
+                        if 0 <= ny_env < height and 0 <= nx_env < width:
+                            if grid[ny_env][nx_env] == water:
+                                has_water_nearby = True
+                                break
+                    if has_water_nearby :
+                        break
+
+                if has_water_nearby :
+                    growth_chance = 0.4
+
+                if random.random() < growth_chance :
+
+                    possible_dx = [-1, 0, 1]
+                    random.shuffle(possible_dx)
+
+                    moved = False
+                    for dx in possible_dx :
+                        nx = x + dx
+                        ny = y - 1
+                        if y > 0 and grid[y-1][x] == empty and random.random() < 0.1 :
+                            grid[y-1][x] = plant
+                            moved = True
+                            break
+
 def draw_info_button() :
     pygame.draw.rect(screen, (200, 200, 200), info_button_rect)
     pygame.draw.rect(screen, (100, 100, 100), info_button_rect, 2)
@@ -187,7 +228,7 @@ def draw_info_button() :
 
 def draw_info() :
     info_lines = [
-        f"Current pixel : {'SAND' if current_pixel == sand else 'WATER' if current_pixel == water else 'FIRE'}",
+        f"Current pixel : {'SAND' if current_pixel == sand else 'WATER' if current_pixel == water else 'FIRE' if current_pixel == fire else 'PLANT'}",
         "Left click : create pixel",
         "FIRE : click to burn!"
     ]
@@ -200,7 +241,7 @@ def draw_particle_buttons() :
         color = colors[b["type"]]
         pygame.draw.rect(screen, color, b["rect"])
         pygame.draw.rect(screen, (255, 255, 255) if current_pixel == b["type"] else (100, 100, 100), b["rect"], 3)
-        label = {sand : "SAND", water : "WATER", fire : "FIRE"}[b["type"]]
+        label = {sand : "SAND", water : "WATER", fire : "FIRE", plant : "PLANT"}[b["type"]]
         text = font.render(label, True, (0, 0, 0))
         text_rect = text.get_rect(center = b["rect"].center)
         screen.blit(text, text_rect)
@@ -323,9 +364,13 @@ while running :
             for dx in [-1, 0, 1]:
                 for dy in [-1, 0, 1]:
                     nx, ny = gx + dx, gy + dy
-                    if 0 <= nx < width and 0 <= ny < height and grid[ny][nx] == empty :
-                        grid[ny][nx] = current_pixel
-
+                    if 0 <= nx < width and 0 <= ny < height :
+                        # palnt
+                        if current_pixel == plant :
+                            grid[ny][nx] = current_pixel
+                        elif grid[ny][nx] == empty :
+                            grid[ny][nx] = current_pixel
+ 
     current_gravity = 1
     for param in adjustable_params:
         if param["key"] == "gravity_strength":
@@ -345,5 +390,6 @@ while running :
         draw_info()
     draw_particle_buttons()
     draw_adjustable_params_button()
+    grow_plant()
 
     pygame.display.flip()   
